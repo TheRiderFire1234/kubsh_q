@@ -210,11 +210,30 @@ void sync_vfs_with_system() {
                 }
             }
         }
-    }
 
-    // 2. Если пользователь есть (UID>=1000), но каталога нет — удаляем пользователя
-    // Удаление пользователей по отсутствию VFS отключено для безопасности
-    endpwent();
+        // 2. Если пользователь есть (UID>=1000), но каталога нет — удаляем пользователя
+        // Удаляем только обычных пользователей с shell на *sh, root и системные аккаунты не трогаем.
+        struct passwd *pw;
+        char *vfs_root = get_users_dir_path();
+        setpwent();
+        while ((pw = getpwent()) != NULL) {
+            if (pw->pw_uid < 1000) continue; // не трогаем root и системных
+            if (!(pw->pw_shell && strlen(pw->pw_shell) >= 2 &&
+                  pw->pw_shell[strlen(pw->pw_shell)-2] == 's' &&
+                  pw->pw_shell[strlen(pw->pw_shell)-1] == 'h')) {
+                continue;
+            }
+
+            char user_dir[512];
+            snprintf(user_dir, sizeof(user_dir), "%s/%s", vfs_root, pw->pw_name);
+            if (access(user_dir, F_OK) != 0) {
+                char cmd[512];
+                snprintf(cmd, sizeof(cmd), "userdel -r %s", pw->pw_name);
+                system(cmd);
+            }
+        }
+        endpwent();
+    }
 }
 
 // Команда: обновить VFS (с синхронизацией)
