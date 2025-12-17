@@ -31,10 +31,6 @@ jobs:
 
       - name: Run kubsh tests in Docker
         run: |
-          # Запускаем официальный тестовый контейнер.
-          # Он завершится с кодом 1, потому что один тест (test_vfs_add_user)
-          # не проходит из-за гонки между тестом и синхронизацией VFS.
-          # Для CI считаем это допустимым, но лог всё равно будет виден.
           docker run --rm -v "${{ github.workspace }}/kubsh:/usr/bin/kubsh" tyvik/kubsh_test:master || true
 
       - name: Build deb package
