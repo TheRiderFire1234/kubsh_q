@@ -1,0 +1,57 @@
+name: kubsh CI
+
+on:
+  push:
+    paths:
+      - ".github/workflows/**"
+      - "kubsh.c"
+      - "Makefile"
+      - "test_wrapper.sh"
+      - "debug_test.sh"
+  pull_request:
+    paths:
+      - "**/*.c"
+      - "Makefile"
+      - ".github/workflows/**"
+
+jobs:
+  build-test-deb:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build tools and dpkg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential dpkg-dev docker.io
+
+      - name: Show tool versions
+        run: |
+          gcc --version || true
+          dpkg-deb --version || true
+          docker --version || true
+
+      - name: Build kubsh binary
+        run: |
+          make clean
+          make
+
+      - name: Run kubsh tests in Docker
+        run: |
+          docker run --rm -v "${{ github.workspace }}/kubsh:/usr/bin/kubsh" tyvik/kubsh_test:master
+
+      - name: Build deb package
+        run: |
+          make deb
+          ls -lh kubsh_1.0.0_amd64.deb
+
+      - name: Upload deb as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubsh_1.0.0_amd64-${{ github.run_number }}
+          path: kubsh_1.0.0_amd64.deb
+          if-no-files-found: error
+
+
