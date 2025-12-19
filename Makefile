@@ -1,49 +1,40 @@
 CC      := gcc
-CFLAGS  := -Wall -Wextra -std=c11 -D_DEFAULT_SOURCE
+CFLAGS  := -Wall -Wextra -std=c11 -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=35
 TARGET  := kubsh
-SRC     := kubsh.c
+SRCS    := kubsh.c vfs.c
+LIBS    := -lfuse3 -lpthread
 
 PKG_DIR := pkg
 DEB     := kubsh_1.0.0_amd64.deb
 
 .PHONY: all build clean run test deb
 
-# Основная цель: собрать бинарник
 all: build
 
-build: $(SRC)
-	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
+build: $(SRCS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SRCS) $(LIBS)
 
-# Удобный запуск собранного бинарника
 run: build
 	./$(TARGET)
 
-# Сборка deb-пакета
 deb: build
 	@echo "Сборка deb-пакета $(DEB)..."
 	rm -rf $(PKG_DIR) $(DEB)
 	mkdir -p $(PKG_DIR)/DEBIAN
 	mkdir -p $(PKG_DIR)/usr/bin
 
-	# Копируем бинарник
 	cp $(TARGET) $(PKG_DIR)/usr/bin/$(TARGET)
 	chmod 755 $(PKG_DIR)/usr/bin/$(TARGET)
 
-	# Файл control
-	printf "Package: kubsh\nVersion: 1.0.0\nSection: utils\nPriority: optional\nArchitecture: amd64\nMaintainer: Unknown <root@localhost>\nDescription: kubsh shell with VFS\n" > $(PKG_DIR)/DEBIAN/control
+	printf "Package: kubsh\nVersion: 1.0.0\nSection: utils\nPriority: optional\nArchitecture: amd64\nDepends: libfuse3-3 (>= 3.0.0)\nMaintainer: Unknown <root@localhost>\nDescription: kubsh shell with FUSE-based VFS exposing /opt/users\n" > $(PKG_DIR)/DEBIAN/control
 
-	# Сборка .deb
 	dpkg-deb --build $(PKG_DIR) $(DEB)
 	@echo "Готово: $(DEB)"
 
-# Запуск тестов в Docker контейнере
-# Тесты ищут kubsh в PATH, поэтому создаём симлинк в /usr/local/bin
 test: build
-	@echo "Запуск тестов в Docker контейнере..."
-	@echo "Создаём симлинк kubsh в /usr/local/bin для доступа через PATH..."
-	docker run -v $(PWD):/mnt tyvik/kubsh_test:master sh -c "ln -sf /mnt/kubsh /usr/local/bin/kubsh && chmod +x /usr/local/bin/kubsh && exec \$$@"
+	@echo "Запуск тестов..."
+	docker run --rm --cap-add SYS_ADMIN --device /dev/fuse -v $(PWD)/kubsh:/usr/bin/kubsh tyvik/kubsh_test:master
 
-# Очистка артефактов сборки
 clean:
 	rm -f $(TARGET) $(DEB)
 	rm -rf $(PKG_DIR)
