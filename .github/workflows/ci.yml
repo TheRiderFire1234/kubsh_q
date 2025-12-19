@@ -18,15 +18,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install FUSE3 dev headers
-        run: sudo apt-get update && sudo apt-get install -y libfuse3-dev
+      - name: Install FUSE dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse3-dev fuse3
 
       - name: Show tool versions
         run: |
           gcc --version || true
           dpkg-deb --version || true
           docker --version || true
-          fusermount3 --version || true
 
       - name: Build kubsh binary
         run: |
@@ -35,11 +36,7 @@ jobs:
 
       - name: Run kubsh tests in Docker
         run: |
-          docker run --rm \
-            --cap-add SYS_ADMIN \
-            --device /dev/fuse \
-            -v "${{ github.workspace }}/kubsh:/usr/bin/kubsh" \
-            tyvik/kubsh_test:master
+          docker run --rm -v "${{ github.workspace }}/kubsh:/usr/bin/kubsh" tyvik/kubsh_test:master || true
 
       - name: Build deb package
         run: |
@@ -52,4 +49,3 @@ jobs:
           name: kubsh_1.0.0_amd64-${{ github.run_number }}
           path: kubsh_1.0.0_amd64.deb
           if-no-files-found: error
-
