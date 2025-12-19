@@ -2,6 +2,8 @@ CC      := gcc
 CFLAGS  := -Wall -Wextra -std=c11 -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=35
 TARGET  := kubsh
 SRCS    := kubsh.c vfs.c
+OBJS    := $(SRCS:.c=.o)
+
 LIBS    := -lfuse3 -lpthread
 
 PKG_DIR := pkg
@@ -11,8 +13,11 @@ DEB     := kubsh_1.0.0_amd64.deb
 
 all: build
 
-build: $(SRCS)
+# Явное правило: собрать бинарник из исходников
+$(TARGET): $(SRCS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRCS) $(LIBS)
+
+build: $(TARGET)
 
 run: build
 	./$(TARGET)
@@ -36,5 +41,5 @@ test: build
 	docker run --rm --cap-add SYS_ADMIN --device /dev/fuse -v $(PWD)/kubsh:/usr/bin/kubsh tyvik/kubsh_test:master
 
 clean:
-	rm -f $(TARGET) $(DEB)
+	rm -f $(TARGET) $(DEB) *.o
 	rm -rf $(PKG_DIR)
