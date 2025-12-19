@@ -20,9 +20,9 @@ jobs:
 
       - name: Show tool versions
         run: |
-          gcc --version || true
-          dpkg-deb --version || true
-          docker --version || true
+          gcc --version 
+          dpkg-deb --version 
+          docker --version 
 
       - name: Build kubsh binary
         run: |
@@ -35,7 +35,7 @@ jobs:
           # Он завершится с кодом 1, потому что один тест (test_vfs_add_user)
           # не проходит из-за гонки между тестом и синхронизацией VFS.
           # Для CI считаем это допустимым, но лог всё равно будет виден.
-          docker run --rm -v "${{ github.workspace }}/kubsh:/usr/bin/kubsh" tyvik/kubsh_test:master || true
+          docker run --rm -v "${{ github.workspace }}/kubsh:/usr/bin/kubsh" tyvik/kubsh_test:master 
 
       - name: Build deb package
         run: |
