@@ -39,7 +39,7 @@ jobs:
             --cap-add SYS_ADMIN \
             --device /dev/fuse \
             -v "${{ github.workspace }}/kubsh:/usr/bin/kubsh" \
-            tyvik/kubsh_test:master || true
+            tyvik/kubsh_test:master
 
       - name: Build deb package
         run: |
