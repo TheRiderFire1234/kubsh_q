@@ -42,12 +42,16 @@ void sighup_handler(int sig) {
 
 // Получение домашней директории
 char* get_home_path() {
+    // 1. Проверяем переменную окружения HOME
     char *home = getenv("HOME");
-    if (home == NULL) {
+    
+    // 2. Если нет - получаем из /etc/passwd
+    if (home == NULL || strlen(home) == 0) {
         struct passwd *pw = getpwuid(getuid());
         if (pw) home = pw->pw_dir;
         else home = "/tmp";
     }
+    
     return home;
 }
 
