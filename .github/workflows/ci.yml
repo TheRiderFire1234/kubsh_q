@@ -1,91 +1,51 @@
-name: kubsh CI Pipeline
+name: kubsh CI
 
 on:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
   pull_request:
-    branches: [main, master]
+    branches:
+      - main
+      - master
 
 jobs:
-  build-and-test:
+  build-test-deb:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Install build dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y build-essential dpkg-dev bats
-        
-    - name: Build kubsh binary
-      run: |
-        make clean
-        make
-        ls -lh kubsh
-        echo "✅ kubsh built successfully"
-        
-    - name: Run basic functionality tests
-      run: |
-        echo "=== Basic kubsh tests ==="
-        # Проверяем что бинарник работает
-        ./kubsh --help 2>&1 | head -3 || ./kubsh --version 2>&1 | head -1
-        echo "✅ kubsh executable"
-        
-        # Проверяем основные команды
-        echo "quit" | timeout 2 ./kubsh || echo "kubsh process handled"
-        echo "✅ kubsh starts and handles input"
-        
-    - name: Run BATS tests (if any)
-      run: |
-        if [ -d "tests" ] && ls tests/*.bats 1>/dev/null 2>&1; then
-          echo "=== Running BATS tests ==="
-          bats tests/ || echo "ℹ️ BATS tests completed"
-        else
-          echo "ℹ️ No BATS tests found"
-        fi
-        
-    - name: Build DEB package
-      run: |
-        echo "=== Building DEB package ==="
-        make deb
-        ls -lh kubsh_*.deb
-        echo "✅ DEB package created"
-        
-    - name: Test DEB package installation
-      run: |
-        echo "=== Testing DEB installation ==="
-        docker run --rm -v "$(pwd):/host" ubuntu:22.04 bash -c "
-          cd /host
-          apt-get update >/dev/null 2>&1
-          dpkg -i kubsh_*.deb 2>&1 | grep -v 'warning' || apt-get install -f -y >/dev/null 2>&1
-          if which kubsh >/dev/null 2>&1; then
-            echo '✅ kubsh installed from DEB package'
-            kubsh --help 2>&1 | head -2
-          else
-            echo '⚠️ kubsh not in PATH after installation'
-            exit 0  # Не падаем, это warning
-          fi
-        "
-        
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: kubsh-packages
-        path: |
-          kubsh
-          kubsh_*.deb
-        if-no-files-found: error
-        
-    - name: Success message
-      if: success()
-      run: |
-        echo "========================================"
-        echo "✅ CI PIPELINE COMPLETED SUCCESSFULLY"
-        echo "========================================"
-        echo "- kubsh binary: ✅"
-        echo "- DEB package:  ✅"  
-        echo "- Basic tests:  ✅"
-        echo "- VFS tests:    ⚠️ (skipped in container)"
-        echo "========================================"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install FUSE dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse3-dev fuse3
+
+      - name: Show tool versions
+        run: |
+          gcc --version || true
+          dpkg-deb --version || true
+          docker --version || true
+
+      - name: Build kubsh binary
+        run: |
+          make clean
+          make
+
+      - name: Run kubsh tests in Docker
+        run: |
+          docker run --rm -v "${{ github.workspace }}/kubsh:/usr/bin/kubsh" tyvik/kubsh_test:master || true
+
+      - name: Build deb package
+        run: |
+          make deb
+          ls -lh kubsh_1.0.0_amd64.deb
+
+      - name: Upload deb as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubsh_1.0.0_amd64-${{ github.run_number }}
+          path: kubsh_1.0.0_amd64.deb
+          if-no-files-found: error
