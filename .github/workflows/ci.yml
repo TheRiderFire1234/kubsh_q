@@ -17,12 +17,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install FUSE dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libfuse3-dev fuse3
-
+        
       - name: Show tool versions
         run: |
           gcc --version || true
