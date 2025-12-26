@@ -17,17 +17,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
-      - name: Show tool versions
-        run: |
-          gcc --version || true
-          dpkg-deb --version || true
-          docker --version || true
-
-      - name: Build kubsh binary
-        run: |
-          make clean
-          make
+      
 
       - name: Run kubsh tests in Docker
         run: |
