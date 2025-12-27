@@ -26,11 +26,11 @@ jobs:
       - name: Build deb package
         run: |
           make deb
-          ls -lh kubsh_1.0.0_amd64.deb
+          ls -lh kubsh.deb
 
       - name: Upload deb as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kubsh_1.0.0_amd64-${{ github.run_number }}
-          path: kubsh_1.0.0_amd64.deb
+          name: kubsh-${{ github.run_number }}
+          path: kubsh.deb
           if-no-files-found: error
