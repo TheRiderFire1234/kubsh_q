@@ -4,7 +4,7 @@ TARGET  := kubsh
 SRC     := kubsh.c
 
 PKG_DIR := pkg
-DEB     := kubsh_1.0.0_amd64.deb
+DEB     := kubsh.deb
 
 .PHONY: all build clean run test deb
 
